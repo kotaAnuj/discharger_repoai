@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discharge Summary Generator</title>
+  <style>
+    /* CSS styles */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    h1, h2, h3 {
+      text-align: center;
+    }
+    
+    form {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+    
+    label {
+      margin-top: 0.5rem;
+      font-weight: bold;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    textarea {
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border: none;
+      background-color: #007BFF;
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #0056b3;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    pre {
+      background: #e9ecef;
+      padding: 1rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Discharge Summary Generator</h1>
+    <!-- Step 1: Patient Details -->
+    <section id="patient-section">
+      <h2>Enter Patient Details</h2>
+      <form id="patient-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" required>
+        
+        <label for="gender">Gender:</label>
+        <input type="text" id="gender" name="gender" required>
+        
+        <label for="regd_no">Registration Number:</label>
+        <input type="text" id="regd_no" name="regd_no">
+        
+        <label for="ip_no">IP Number:</label>
+        <input type="text" id="ip_no" name="ip_no">
+        
+        <label for="department">Department:</label>
+        <input type="text" id="department" name="department" required>
+        
+        <label for="ward">Ward:</label>
+        <input type="text" id="ward" name="ward" required>
+        
+        <label for="doa">Date of Admission:</label>
+        <input type="date" id="doa" name="doa" required>
+        
+        <label for="dodeath">Date of Death:</label>
+        <input type="date" id="dodeath" name="dodeath" required>
+        
+        <label for="primary_consultant">Primary Consultant:</label>
+        <input type="text" id="primary_consultant" name="primary_consultant" required>
+        
+        <button type="submit">Save Patient Details</button>
+      </form>
+    </section>
+
+    <!-- Step 2: Clinical Data -->
+    <section id="clinical-section" class="hidden">
+      <h2>Enter Clinical Data</h2>
+      <form id="clinical-form">
+        <label for="final_diagnosis">Final Diagnosis:</label>
+        <textarea id="final_diagnosis" name="final_diagnosis" required></textarea>
+        
+        <label for="chief_complaints">Chief Complaints:</label>
+        <textarea id="chief_complaints" name="chief_complaints" required></textarea>
+        
+        <label for="past_medical_history">Past Medical History:</label>
+        <textarea id="past_medical_history" name="past_medical_history"></textarea>
+        
+        <label for="oemd">O/E at EMD:</label>
+        <textarea id="oemd" name="oemd"></textarea>
+        
+        <label for="hospital_course">Hospital Course:</label>
+        <textarea id="hospital_course" name="hospital_course" required></textarea>
+        
+        <label for="investigations">Investigations:</label>
+        <textarea id="investigations" name="investigations" required></textarea>
+        
+        <button type="submit">Save Clinical Data</button>
+      </form>
+    </section>
+
+    <!-- Step 3: Generate Summary -->
+    <section id="generate-section" class="hidden">
+      <h2>Generate Discharge Summary</h2>
+      <button id="generate-summary">Generate Summary</button>
+    </section>
+
+    <!-- Step 4: Display and Review Summary -->
+    <section id="summary-section" class="hidden">
+      <h2>Discharge Summary</h2>
+      <pre id="summary-display"></pre>
+      <h3>Review and Update (Optional):</h3>
+      <form id="review-form">
+        <textarea id="review-text" name="review_text"></textarea>
+        <button type="submit">Submit Review</button>
+      </form>
+    </section>
+  </div>
+  
+  <script>
+    // JavaScript code using the Fetch API to interact with backend endpoints.
+    const BASE_URL = ''; // Use relative URL as same domain is assumed.
+    let currentPatientId = null;
+
+    // Helper functions to show and hide sections.
+    const showSection = (id) => document.getElementById(id).classList.remove('hidden');
+    const hideSection = (id) => document.getElementById(id).classList.add('hidden');
+
+    // Step 1: Handle Patient Details form submission.
+    document.getElementById('patient-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        name: form.name.value,
+        age: parseInt(form.age.value),
+        gender: form.gender.value,
+        regd_no: form.regd_no.value,
+        ip_no: form.ip_no.value,
+        department: form.department.value,
+        ward: form.ward.value,
+        doa: form.doa.value,
+        dodeath: form.dodeath.value,
+        primary_consultant: form.primary_consultant.value
+      };
+
+      try {
+        const response = await fetch('/patients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (response.ok) {
+          currentPatientId = result.patient.id;
+          alert('Patient details saved.');
+          hideSection('patient-section');
+          showSection('clinical-section');
+        } else {
+          alert('Error: ' + JSON.stringify(result.error || result.errors));
+        }
+      } catch (error) {
+        console.error("Error saving patient:", error);
+      }
+    });
+
+    // Step 2: Handle Clinical Data form submission.
+    document.getElementById('clinical-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentPatientId) {
+        alert("Patient not created.");
+        return;
+      }
+      const form = e.target;
+      const data = {
+        final_diagnosis: form.final_diagnosis.value,
+        chief_complaints: form.chief_complaints.value,
+        past_medical_history: form.past_medical_history.value,
+        oemd: form.oemd.value,
+        hospital_course: form.hospital_course.value,
+        investigations: form.investigations.value
+      };
+
+      try {
+        const response = await fetch(`/patients/${currentPatientId}/clinical-data`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (response.ok) {
+          alert('Clinical data saved.');
+          hideSection('clinical-section');
+          showSection('generate-section');
+        } else {
+          alert('Error: ' + JSON.stringify(result.error || result.errors));
+        }
+      } catch (error) {
+        console.error("Error saving clinical data:", error);
+      }
+    });
+
+    // Step 3: Handle Summary Generation using Gemini AI.
+    document.getElementById('generate-summary').addEventListener('click', async () => {
+      if (!currentPatientId) {
+        alert("Patient not created.");
+        return;
+      }
+      try {
+        const response = await fetch(`/patients/${currentPatientId}/generate-summary`);
+        const result = await response.json();
+        if (response.ok) {
+          document.getElementById('summary-display').textContent = result.summary.summary_text;
+          alert('Discharge summary generated.');
+          hideSection('generate-section');
+          showSection('summary-section');
+          // Pre-fill the review textarea with the generated summary.
+          document.getElementById('review-text').value = result.summary.summary_text;
+        } else {
+          alert('Error: ' + JSON.stringify(result.error || result.errors));
+        }
+      } catch (error) {
+        console.error("Error generating summary:", error);
+      }
+    });
+
+    // Step 4: Handle Summary Review/Update.
+    document.getElementById('review-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentPatientId) {
+        alert("Patient not created.");
+        return;
+      }
+      const reviewText = document.getElementById('review-text').value;
+      try {
+        const response = await fetch(`/patients/${currentPatientId}/summary`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ summary_text: reviewText })
+        });
+        const result = await response.json();
+        if (response.ok) {
+          document.getElementById('summary-display').textContent = result.summary.summary_text;
+          alert('Discharge summary updated.');
+        } else {
+          alert('Error: ' + JSON.stringify(result.error || result.errors));
+        }
+      } catch (error) {
+        console.error("Error updating summary:", error);
+      }
+    });
+  </script>
+</body>
+</html>
